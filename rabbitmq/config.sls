@@ -4,6 +4,7 @@
     {% for value in plugin %}
     - {{ value }}
     {% endfor %}
+    - runas: root
     - require:
       - pkg: rabbitmq-server
       - file: rabbitmq_binary_tool_plugins
@@ -23,17 +24,6 @@
 
 # need to create users and then vhosts
 
-{% for name, user in salt["pillar.get"]("rabbitmq:user", {}).iteritems() %}
-rabbitmq_user_{{ name }}:
-  rabbitmq_user.present:
-    - name: {{ name }}
-    {% for value in user %}
-    - {{ value }}
-    {% endfor %}
-    - require:
-      - service: rabbitmq-server
-{% endfor %}
-
 {% for name, policy in salt["pillar.get"]("rabbitmq:vhost", {}).iteritems() %}
 rabbitmq_vhost_{{ name }}:
   rabbitmq_vhost.present:
@@ -43,4 +33,18 @@ rabbitmq_vhost_{{ name }}:
     {% endfor %}
     - require:
       - service: rabbitmq-server
+{% endfor %}
+
+{% for name, user in salt["pillar.get"]("rabbitmq:user", {}).iteritems() %}
+rabbitmq_user_{{ name }}:
+  rabbitmq_user.present:
+    - name: {{ name }}
+    {% for value in user %}
+    - {{ value }}
+    {% endfor %}
+    - require:
+      - service: rabbitmq-server
+{% for vhost in salt["pillar.get"]("rabbitmq:vhost", {}).keys() %}
+      - rabbitmq_vhost: rabbitmq_vhost_{{ vhost }}
+{% endfor %}
 {% endfor %}
